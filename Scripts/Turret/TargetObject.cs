@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class TargetObject : MonoBehaviour
 {
-    public Camera testCamera;
-    private BaseTurret alertedTurret;
+    private List<BaseTurret> alertedTurrets = new List<BaseTurret>();
+
     // Start is called before the first frame update
     void Start()
     {
@@ -20,15 +20,20 @@ public class TargetObject : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (GetComponent<Renderer>().IsVisibleFrom(testCamera) && !FindObjectOfType<BaseTurret>().trackedTargets.Contains(gameObject))
+        foreach (TurretSessionData sessionData in FindObjectOfType<SessionData>().turretData)
         {
-            FindObjectOfType<BaseTurret>().ReportTarget(gameObject);
-            alertedTurret = FindObjectOfType<BaseTurret>();
-        }
-        else
-        {
-            alertedTurret.ReleaseTarget(gameObject);
-            alertedTurret = null;
+            if (GetComponent<Renderer>().IsVisibleFrom(sessionData.trackingCamera) && !sessionData.baseTurret.trackedTargets.Contains(gameObject))
+            {
+                if(alertedTurrets == null) { alertedTurrets = new List<BaseTurret>(); }
+                sessionData.baseTurret.ReportTarget(gameObject);
+                alertedTurrets.Add(sessionData.baseTurret);
+            }
+            else if (!GetComponent<Renderer>().IsVisibleFrom(sessionData.trackingCamera) && sessionData.baseTurret.trackedTargets.Contains(gameObject))
+            {
+                sessionData.baseTurret.ReleaseTarget(gameObject);
+                alertedTurrets.Remove(sessionData.baseTurret);
+                alertedTurrets = null;
+            }
         }
     }
 }
