@@ -5,18 +5,26 @@ using UnityEngine;
 
 public class BaseTurret : MonoBehaviour
 {
+    // Targeting Variables
     public Transform turretPivot, turretMuzzlePoint;
     public List<GameObject> trackedTargets = new List<GameObject>();
+    //public List<Target> trackedTargets = new List<Target>();
     public Camera turretTrackingCamera;
-    public float maxTranslationSpeed = 5.0f;
+    public float translationSpeed = 1.0f;
 
     protected bool isPrioritizing = false;
     protected Coroutine targetRoutine;
 
+    // Shooting Variables
+    [Range(0.1f, 2.5f)]
+    public float fireDelay = 0.25f;
+    public float maximumRange = 100.0f;
+    public bool canFire = true;
+
     public void ReportTarget(GameObject newTarget)
     {
         if (trackedTargets.Contains(newTarget)) { return; }
-        trackedTargets.Add(newTarget);
+        //trackedTargets.Add(newTarget);
         PrioritizeTargets();
 
         if (trackedTargets.Count >= 1) { TranslateToTarget(); }
@@ -32,37 +40,25 @@ public class BaseTurret : MonoBehaviour
 
     public void TranslateToTarget()
     {
-        Vector3 targetLock = trackedTargets[0].transform.position;
-        Vector3 updatedDirection = Vector3.RotateTowards(turretPivot.forward, targetLock - turretPivot.position, Time.deltaTime, 0.0f);
+        Vector3 updatedDirection = Vector3.RotateTowards(turretPivot.forward, trackedTargets[0].transform.position - turretPivot.position, translationSpeed * Time.deltaTime, 0.0f);
         turretPivot.rotation = Quaternion.LookRotation(updatedDirection);
     }
 
-    private void PrioritizeTargets()
+    public IEnumerator FireTurret()
+    {
+        canFire = false;
+        turretMuzzlePoint.GetComponent<ParticleSystem>().Emit(20);
+        yield return new WaitForSeconds(fireDelay);
+        canFire = true;
+    }
+
+    public void PrioritizeTargets()
     {
         if (trackedTargets.Count >= 2)
         {
-            trackedTargets.OrderBy(t => Vector3.Distance(transform.position, t.transform.position));
-            if(Vector3.Distance(trackedTargets[0].transform.position, turretPivot.position) > Vector3.Distance(trackedTargets[1].transform.position, turretPivot.position))
-            {
-                trackedTargets.Reverse();
-            }
+            trackedTargets = trackedTargets.OrderBy(t => Vector3.Distance(transform.position, t.transform.position)).ToList();
         }
     }
 
-    protected IEnumerator TargetPriorityUpdate()
-    {
-        if (trackedTargets.Count >= 2)
-        {
-            isPrioritizing = true;
-            trackedTargets.OrderBy(t => Vector3.Distance(transform.position, t.transform.position));
-            if (Vector3.Distance(trackedTargets[0].transform.position, turretPivot.position) > Vector3.Distance(trackedTargets[1].transform.position, turretPivot.position))
-            {
-                trackedTargets.Reverse();
-            }
-        }
-
-        yield return new WaitForSeconds(1.0f);
-        isPrioritizing = false;
-        targetRoutine = StartCoroutine(TargetPriorityUpdate());
-    }
+    protected virtual void PassiveAction() { }
 }

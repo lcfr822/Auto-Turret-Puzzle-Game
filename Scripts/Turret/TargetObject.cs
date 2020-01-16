@@ -1,21 +1,17 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 public class TargetObject : MonoBehaviour
 {
     private List<BaseTurret> alertedTurrets = new List<BaseTurret>();
+    private Vector3 prevPosition = Vector3.zero;
 
     // Start is called before the first frame update
     void Start()
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        prevPosition = transform.position;
     }
 
     private void FixedUpdate()
@@ -24,7 +20,6 @@ public class TargetObject : MonoBehaviour
         {
             if (GetComponent<Renderer>().IsVisibleFrom(sessionData.trackingCamera) && !sessionData.baseTurret.trackedTargets.Contains(gameObject))
             {
-                if(alertedTurrets == null) { alertedTurrets = new List<BaseTurret>(); }
                 sessionData.baseTurret.ReportTarget(gameObject);
                 alertedTurrets.Add(sessionData.baseTurret);
             }
@@ -32,8 +27,21 @@ public class TargetObject : MonoBehaviour
             {
                 sessionData.baseTurret.ReleaseTarget(gameObject);
                 alertedTurrets.Remove(sessionData.baseTurret);
-                alertedTurrets = null;
             }
         }
+
+        if (Vector3.Distance(transform.position, prevPosition) > 0.1f)
+        {
+            foreach (BaseTurret turret in alertedTurrets)
+            {
+                turret.PrioritizeTargets();
+            }
+            prevPosition = transform.position;
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
+        Handles.Label(transform.position, "Distance: " + Vector3.Distance(transform.position, FindObjectOfType<BaseTurret>().transform.position));
     }
 }

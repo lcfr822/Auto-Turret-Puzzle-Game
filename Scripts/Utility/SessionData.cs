@@ -23,7 +23,6 @@ public class SessionData : MonoBehaviour
     {
         TurretSessionData registeredTurret = new TurretSessionData(unregisteredTurret.GetComponentInChildren<Camera>(), unregisteredTurret.GetComponent<BaseTurret>());
         turretData.Add(registeredTurret);
-        Debug.Log("Registered new turret: " + unregisteredTurret.name);
     }
 }
 
